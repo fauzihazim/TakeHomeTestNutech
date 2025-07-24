@@ -1,6 +1,7 @@
 import bcrypt from 'bcrypt';
-import 'dotenv/config';
 import mysql from 'mysql2/promise';
+import { generateAccessToken, generateRefreshToken } from "../../utils/jwtUtils.js";
+import 'dotenv/config';
 
 const saltRounds = Number(process.env.SALTROUNDS);
 
@@ -30,11 +31,13 @@ export const login = async (req, res) => {
                 "data": null
             });
         };
+        const accessToken = generateAccessToken({ sub: findingUser.idUser, email: findingUser.email });
+        const refreshToken = generateRefreshToken({ sub: findingUser.idUser, email: findingUser.email });
         res.status(200).json({  
             "status": 0,
             "message": "Login Sukses",
             "data": {
-                "token": "Token Ini"
+                "token": accessToken
             }
         });
     } catch (error) {
