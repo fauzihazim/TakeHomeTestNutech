@@ -4,7 +4,6 @@ import mysql from 'mysql2/promise';
 
 const saltRounds = Number(process.env.SALTROUNDS);
 
-
 const conn = await mysql.createConnection({
     host: process.env.HOST,
     user: process.env.USER,
@@ -15,8 +14,8 @@ const conn = await mysql.createConnection({
 export const login = async (req, res) => {
     const { email, password } = req.body;
     try {
-        const findingUser = await findUserByEmailAndPass(email, password);
-        if (findingUser) {
+        const findingUser = await findUserByEmail(email);
+        if (!findingUser) {
             res.status(401).json({  
                 status: 103,
                 message: "Username atau password salah",
@@ -24,6 +23,13 @@ export const login = async (req, res) => {
             });
             return;
         }
+        if (!await bcrypt.compare(password, findingUser.password)) {
+            return res.status(401).json({
+                "status": 103,
+                "message": "Username atau password salah",
+                "data": null
+            });
+        };
         res.status(200).json({  
             "status": 0,
             "message": "Login Sukses",
@@ -87,6 +93,8 @@ const findUserByEmailAndPass = async (email, password) => {
             'SELECT * FROM users WHERE email = ? AND password = ? LIMIT 1',
             [email, password]
         );
+        console.log("Password ", user[0].password);
+        
         return user[0] || null;
     } catch (error) {
         console.error('Error finding user:', error);
