@@ -1,5 +1,9 @@
+import bcrypt from 'bcrypt';
 import 'dotenv/config';
 import mysql from 'mysql2/promise';
+
+const saltRounds = Number(process.env.SALTROUNDS);
+
 
 const conn = await mysql.createConnection({
     host: process.env.HOST,
@@ -9,18 +13,24 @@ const conn = await mysql.createConnection({
 });
 
 export const login = async (req, res) => {
+    const { email, password } = req.body;
     try {
-        const [user] = await conn.execute(
-            'SELECT * FROM users'
-        );
-    
-        console.log(user);
+        const findingUser = await findUserByEmailAndPass(email, password);
+        if (findingUser) {
+            res.status(401).json({  
+                status: 103,
+                message: "Username atau password salah",
+                data: null
+            });
+            return;
+        }
         res.status(200).json({  
-            status: "success",
-            message: "User get successfully",
-                data: user
+            "status": 0,
+            "message": "Login Sukses",
+            "data": {
+                "token": "Token Ini"
             }
-        );
+        });
     } catch (error) {
         res.status(500).json({
             status: "failed",
@@ -31,7 +41,6 @@ export const login = async (req, res) => {
 
 export const register = async (req, res) => {
     const { email, first_name, last_name, password } = req.body;
-    
     try {
         const findingUser = await findUserByEmail(email);
         if (findingUser) {
@@ -41,9 +50,10 @@ export const register = async (req, res) => {
             });
             return;
         }
+        const hashedPassword = await bcrypt.hash(password, saltRounds);
         await conn.execute(
           'INSERT INTO users (email, first_name, last_name, password) VALUES (?, ?, ?, ?)',
-          [email, first_name, last_name, password]
+          [email, first_name, last_name, hashedPassword]
         );
         res.status(200).json({  
             "status": 0,
@@ -60,13 +70,26 @@ export const register = async (req, res) => {
 
 const findUserByEmail = async (email) => {
   try {
-    const [rows] = await conn.execute(
+    const [user] = await conn.execute(
       'SELECT * FROM users WHERE email = ? LIMIT 1',
       [email]
     );
-    return rows[0] || null;
+    return user[0] || null;
   } catch (error) {
     console.error('Error finding user:', error);
     throw error;
   }
 };
+
+const findUserByEmailAndPass = async (email, password) => {
+    try {
+        const [user] = await conn.execute(
+            'SELECT * FROM users WHERE email = ? AND password = ? LIMIT 1',
+            [email, password]
+        );
+        return user[0] || null;
+    } catch (error) {
+        console.error('Error finding user:', error);
+        throw error;
+    }
+}
