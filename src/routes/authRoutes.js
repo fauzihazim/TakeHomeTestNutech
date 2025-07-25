@@ -3,7 +3,7 @@ import { getProfile, login, register, updateProfile } from "../controllers/membe
 import { authenticateAccessToken, loginValidator, registerValidator } from '../middleware/authMiddleware.js';
 
 const app = express();
-app.use(express.json()); 
+app.use(express.json());
 
 app.post('/login', loginValidator, login);
 app.post('/register', registerValidator, register);
