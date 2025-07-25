@@ -77,6 +77,67 @@ export const register = async (req, res) => {
     }
 }
 
+export const getProfile = async (req, res) => {
+    try {
+        const email = res.locals.email;
+        const findUser = await findUserByEmail(email);
+        if (!findUser) {
+            res.status(404).json({
+                status: "failed",
+                message: "User tidak ditemukan"
+            });
+            return;
+        }
+        res.status(200).json({
+            "status": 0,
+            "message": "Sukses",
+            "data": {
+                "email": findUser.email,
+                "first_name": findUser.first_name,
+                "last_name": findUser.last_name,
+                "profile_image": findUser.profile_image
+            }
+        });
+    } catch (error) {
+        res.status(500).json({
+            status: "failed",
+            error: "Internal server error"
+        });
+    }
+}
+
+export const updateProfile = async (req, res) => {
+    const { first_name, last_name } = req.body;
+    try {
+        const email = res.locals.email;
+        const [updateUser] = await conn.execute(
+          'UPDATE users SET first_name = ?, last_name = ? WHERE email = ?',
+          [first_name, last_name, email]
+        );
+        if (!updateUser.affectedRows) {
+            throw new Error("Failed update profile data");
+        }
+        const [[updatedUser]] = await conn.execute(
+          'SELECT profile_image FROM users'
+        );
+        res.status(200).json({
+            status: 0,
+            message: "Update Pofile berhasil",
+            data: {
+                email: email,
+                first_name: first_name,
+                last_name: last_name,
+                profile_image: updatedUser.profile_image
+            }
+        });
+    } catch (error) {
+        res.status(500).json({
+            status: "failed",
+            error: "Internal server error"
+        });
+    }
+}
+
 const findUserByEmail = async (email) => {
   try {
     const [user] = await conn.execute(
@@ -85,22 +146,6 @@ const findUserByEmail = async (email) => {
     );
     return user[0] || null;
   } catch (error) {
-    console.error('Error finding user:', error);
     throw error;
   }
 };
-
-const findUserByEmailAndPass = async (email, password) => {
-    try {
-        const [user] = await conn.execute(
-            'SELECT * FROM users WHERE email = ? AND password = ? LIMIT 1',
-            [email, password]
-        );
-        console.log("Password ", user[0].password);
-        
-        return user[0] || null;
-    } catch (error) {
-        console.error('Error finding user:', error);
-        throw error;
-    }
-}
