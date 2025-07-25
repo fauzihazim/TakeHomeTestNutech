@@ -1,37 +1,55 @@
 import { body, validationResult } from 'express-validator';
 
-export const authenticateAccessToken = (req, res, next) => {
-  
-};
-
-export const registerValidator = [
+const validateEmail = [
   body('email')
     .trim()
-    .notEmpty()
-    .isEmail()
-    .normalizeEmail(),
-    
-  body('first_name')
-    .trim()
-    .notEmpty(),
-    
-  body('last_name')
-    .trim()
-    .notEmpty(),
-    
+    .notEmpty().withMessage('Invalid input format')
+    .isEmail().withMessage('Paramter email tidak sesuai format')
+    .normalizeEmail()
+]
+
+const validatePassword = [
   body('password')
     .trim()
-    .notEmpty()
-    .isLength({ min: 8 }),
-  (req, res, next) => {
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-      return res.status(400).json({
-        status: 102,
-        message: 'Paramter email tidak sesuai format',
-        data: null
-      });
-    }
-    next();
+    .notEmpty().withMessage('Invalid input format')
+    .isLength({ min: 8 }).withMessage('Invalid input format')
+]
+
+const validateFirstName = [
+  body('first_name')
+    .trim()
+    .notEmpty().withMessage('Invalid input format')
+]
+
+const validateLastName = [
+  body('last_name')
+    .trim()
+    .notEmpty().withMessage('Invalid input format')
+]
+
+const handleValidationErrors = (req, res, next) => {
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    return res.status(400).json({
+      status: 102,
+      message: errors.array()[0].msg,
+      data: null
+    });
   }
+  next();
+}
+
+export const loginValidator = [
+  ...validateEmail,
+  ...validatePassword,
+  handleValidationErrors
 ];
+
+export const registerValidator = [
+  ...validateEmail,
+  ...validateFirstName,
+  ...validateLastName,
+  ...validatePassword,
+  handleValidationErrors
+];
+
