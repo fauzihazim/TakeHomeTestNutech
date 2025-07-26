@@ -1,4 +1,5 @@
 import { conn } from '../../utils/db.js';
+import { format } from 'date-fns';
 
 export const getBalance = async (req, res) => {
     try {
@@ -46,9 +47,10 @@ export const topUp = async (req, res) => {
             'UPDATE users SET balance = balance + ? WHERE email = ? AND idUser = ?',
             [top_up_amount, email, userId]
         );
+        const invoiceNumber = generateInvoice(transactionResult.insertId);
         await connection.execute(
-            'INSERT INTO topup (idTransaction, amount, topupStatus) VALUES (?, ?, ?)',
-            [transactionResult.insertId, top_up_amount, 'SUCCESS']
+            'INSERT INTO topup (idTransaction, amount, topupStatus, invoice_numer) VALUES (?, ?, ?, ?)',
+            [transactionResult.insertId, top_up_amount, 'SUCCESS', invoiceNumber]
         );
         const [[userBalance]] = await connection.execute(
             'SELECT balance FROM users WHERE email = ?',
@@ -83,4 +85,9 @@ export const topUp = async (req, res) => {
     } finally {
         if (connection) connection.release();
     }
+}
+
+const generateInvoice = (id) => {
+    const today = format(new Date(), 'ddMMyyyy');
+    return `INV${today}-00${id}`;
 }
