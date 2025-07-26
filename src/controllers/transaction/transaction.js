@@ -14,7 +14,6 @@ export const getBalance = async (req, res) => {
             });
             return;
         };
-        
         res.status(200).json({
             status: 0,
             message: "Get Balance Berhasil",
@@ -67,8 +66,6 @@ export const topUp = async (req, res) => {
         try {
             if (connection) {
                 await connection.rollback();
-                
-                // Only record failure if we got a transaction ID
                 if (transactionResult?.insertId) {
                     await conn.execute(
                         'INSERT INTO topup (idTransaction, amount, topupStatus) VALUES (?, ?, ?)',
