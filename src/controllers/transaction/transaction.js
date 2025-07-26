@@ -193,11 +193,9 @@ export const getHistories = async (req, res) => {
       data: history
     });
   } catch (error) {
-    console.error('Error fetching history:', error);
     res.status(500).json({
-      status: 1,
-      message: "Gagal mengambil riwayat transaksi",
-      data: null
+        status: "failed",
+        error: "Internal server error"
     });
   }
 };
@@ -207,42 +205,20 @@ const generateInvoice = (id) => {
     return `INV${today}-00${id}`;
 }
 
-const getTransactionHistory = async (userId, offset = 0, limit = 10) => {
-  const connection = await conn.getConnection();
-  try {
-    // Get all transactions (both TOPUP and PAYMENT) with their details
-    const [transactions] = await connection.execute(`
-      SELECT 
-        t.id,
+const getTransactionHistory = async (userId) => {
+  const [records] = await conn.execute(`SELECT 
+        COALESCE(top.invoice_number, p.invoice_number) AS invoice_number,
         t.transaction_type,
-        t.amount AS total_amount,
-        COALESCE(p.invoice_number, top.invoice_number) AS invoice_number,
-        COALESCE(p.created_at, top.created_at) AS created_on,
         CASE 
-          WHEN t.transaction_type = 'TOPUP' THEN 'Top Up balance'
-          WHEN t.transaction_type = 'PAYMENT' THEN s.service_name
-        END AS description
-      FROM transactions t
-      LEFT JOIN topup top ON t.id = top.idTransaction AND t.transaction_type = 'TOPUP'
-      LEFT JOIN payments p ON t.id = p.idTransaction AND t.transaction_type = 'PAYMENT'
-      LEFT JOIN services s ON p.service_code = s.service_code
-      WHERE t.idUser = ?
-      ORDER BY created_on DESC
-      LIMIT ? OFFSET ?
-    `, [userId, limit, offset]);
-
-    // Format the created_on field to ISO 8601
-    const formattedTransactions = transactions.map(tx => ({
-      ...tx,
-      created_on: new Date(tx.created_on).toISOString()
-    }));
-
-    return {
-      records: formattedTransactions,
-      offset,
-      limit
-    };
-  } finally {
-    connection.release();
-  }
+            WHEN t.transaction_type = 'TOPUP' THEN 'Top Up balance'
+            ELSE p.service_name
+        END AS description,
+        t.amount AS total_amount,
+        COALESCE(top.created_at, p.created_at) AS created_on
+    FROM transactions t
+    LEFT JOIN topup top ON t.id = top.idTransaction AND t.transaction_type = 'TOPUP'
+    LEFT JOIN payments p ON t.id = p.idTransaction AND t.transaction_type = 'PAYMENT'
+    WHERE t.idUser = ?
+    ORDER BY t.id DESC`, [userId]);
+  return records;
 };
