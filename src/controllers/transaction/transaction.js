@@ -36,7 +36,6 @@ export const topUp = async (req, res) => {
     const email = res.locals.email;
     const userId = res.locals.userId;
     try {
-        
         connection = await conn.getConnection();
         await connection.beginTransaction();
         await connection.execute(
@@ -47,15 +46,11 @@ export const topUp = async (req, res) => {
             'INSERT INTO transactions (idUser, amount, transaction_type) VALUES (?, ?, ?)',
             [userId, top_up_amount, 'TOPUP']
         );
-        console.log(transactionResult.insertId);
-        
         const invoiceNumber = generateInvoice(transactionResult.insertId);
-        console.log("here 1");
         await connection.execute(
             'INSERT INTO topup (idTransaction, amount, topupStatus, invoice_number) VALUES (?, ?, ?, ?)',
             [transactionResult.insertId, top_up_amount, 'SUCCESS', invoiceNumber]
         );
-        console.log("here 1");
         const [[userBalance]] = await connection.execute(
             'SELECT balance FROM users WHERE email = ?',
             [email]
@@ -63,7 +58,7 @@ export const topUp = async (req, res) => {
         await connection.commit();
         res.status(200).json({
             status: 0,
-            message: "Get Balance Berhasil",
+            message: "Top Up Balance berhasil",
             data: {
                 balance: userBalance.balance
             }
@@ -98,67 +93,81 @@ export const topUp = async (req, res) => {
 }
 
 export const payment = async (req, res) => {
-    const {top_up_amount} = req.body;
+    const {service_code} = req.body;
     let connection;
     const email = res.locals.email;
     const userId = res.locals.userId;
+    let findService;
     try {
-        
         connection = await conn.getConnection();
         await connection.beginTransaction();
+        [[findService]] = await conn.execute(
+            'SELECT service_code, service_name, service_tariff FROM services WHERE service_code = ?',
+            [service_code]
+        );
+        if (!findService) {
+            res.status(400).json({
+                "status": 102,
+                "message": "Service ataus Layanan tidak ditemukan",
+                "data": null
+            });
+            return;
+        };
+        const [[getUser]] = await connection.execute(
+            'SELECT idUser, email, balance FROM users WHERE email = ? AND idUser = ?',
+            [email, userId]
+        );
+        if (findService.service_tariff > getUser.balance) {
+            return res.status(400).json({
+                status: 102,
+                message: "Saldo tidak mencukupi",
+                data: null
+            });
+        };
         await connection.execute(
-            'UPDATE users SET balance = balance + ? WHERE email = ? AND idUser = ?',
-            [top_up_amount, email, userId]
+            'UPDATE users SET balance = balance - ? WHERE email = ? AND idUser = ?',
+            [findService.service_tariff, email, userId]
         );
         const [transactionResult] = await connection.execute(
             'INSERT INTO transactions (idUser, amount, transaction_type) VALUES (?, ?, ?)',
-            [userId, top_up_amount, 'TOPUP']
+            [userId, findService.service_tariff, 'PAYMENT']
         );
-        console.log(transactionResult.insertId);
-        
         const invoiceNumber = generateInvoice(transactionResult.insertId);
-        console.log("here 1");
         await connection.execute(
-            'INSERT INTO topup (idTransaction, amount, topupStatus, invoice_number) VALUES (?, ?, ?, ?)',
-            [transactionResult.insertId, top_up_amount, 'SUCCESS', invoiceNumber]
-        );
-        console.log("here 1");
-        const [[userBalance]] = await connection.execute(
-            'SELECT balance FROM users WHERE email = ?',
-            [email]
+            'INSERT INTO payments (idTransaction, amount, topupStatus, invoice_number) VALUES (?, ?, ?, ?)',
+            [transactionResult.insertId, findService.service_tariff, 'SUCCESS', invoiceNumber]
         );
         await connection.commit();
         res.status(200).json({
             status: 0,
             message: "Get Balance Berhasil",
             data: {
-                balance: userBalance.balance
+                balance: getUser.balance
             }
         });
     } catch (error) {
-        console.error(error);
-        
         try {
             if (connection) {
                 await connection.rollback();
-                const [transactionResult] = await conn.execute(
+                const [transactionResult] = await connection.execute(
                     'INSERT INTO transactions (idUser, amount, transaction_type) VALUES (?, ?, ?)',
-                    [userId, top_up_amount, 'TOPUP']
+                    [userId, findService.service_tariff, 'PAYMENT']
                 );
                 if (transactionResult?.insertId) {
                     await conn.execute(
-                        'INSERT INTO topup (idTransaction, amount, topupStatus) VALUES (?, ?, ?)',
-                        [transactionResult.insertId, top_up_amount, 'FAILED']
+                        'INSERT INTO payments (idTransaction, amount, topupStatus) VALUES (?, ?, ?)',
+                        [transactionResult.insertId, findService.service_tariff, 'FAILED']
                     );
                 }
             }
         } catch (rollbackError) {
             console.error('Rollback error:', rollbackError);
+        } finally {
+            res.status(500).json({
+                status: "failed",
+                error: "Internal server error"
+            });
         }
-        res.status(500).json({
-            status: "failed",
-            error: "Internal server error"
-        });
     } finally {
         if (connection) connection.release();
     }
