@@ -9,19 +9,6 @@ CREATE TABLE IF NOT EXISTS `banners` (
   PRIMARY KEY (`idBanner`)
 );
 
-CREATE TABLE IF NOT EXISTS `payments` (
-  `idPayment` int NOT NULL AUTO_INCREMENT,
-  `idTransaction` int NOT NULL,
-  `amount` int NOT NULL,
-  `topupStatus` enum('SUCCESS','FAILED') NOT NULL,
-  `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  `invoice_number` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL,
-  `service_name` varchar(255) NOT NULL,
-  PRIMARY KEY (`idPayment`),
-  KEY `idTransaction` (`idTransaction`),
-  CONSTRAINT `payments_ibfk_1` FOREIGN KEY (`idTransaction`) REFERENCES `transactions` (`id`) ON DELETE RESTRICT ON UPDATE CASCADE
-);
-
 CREATE TABLE IF NOT EXISTS `services` (
   `idService` int NOT NULL AUTO_INCREMENT,
   `service_code` varchar(255) NOT NULL,
@@ -29,28 +16,6 @@ CREATE TABLE IF NOT EXISTS `services` (
   `service_icon` varchar(255) NOT NULL,
   `service_tariff` int NOT NULL,
   PRIMARY KEY (`idService`)
-);
-
-CREATE TABLE IF NOT EXISTS `topup` (
-  `idTopUp` int NOT NULL AUTO_INCREMENT,
-  `idTransaction` int NOT NULL,
-  `amount` int NOT NULL,
-  `topupStatus` enum('SUCCESS','FAILED') NOT NULL,
-  `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  `invoice_number` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL,
-  PRIMARY KEY (`idTopUp`),
-  KEY `idTransaction` (`idTransaction`),
-  CONSTRAINT `topup_ibfk_1` FOREIGN KEY (`idTransaction`) REFERENCES `transactions` (`id`) ON DELETE RESTRICT ON UPDATE CASCADE
-);
-
-CREATE TABLE IF NOT EXISTS `transactions` (
-  `id` int NOT NULL AUTO_INCREMENT,
-  `idUser` int NOT NULL,
-  `transaction_type` enum('PAYMENT','TOPUP') NOT NULL,
-  `amount` int NOT NULL,
-  PRIMARY KEY (`id`),
-  KEY `idUser` (`idUser`),
-  CONSTRAINT `transactions_ibfk_1` FOREIGN KEY (`idUser`) REFERENCES `users` (`idUser`) ON DELETE RESTRICT ON UPDATE CASCADE
 );
 
 CREATE TABLE IF NOT EXISTS `users` (
@@ -64,3 +29,43 @@ CREATE TABLE IF NOT EXISTS `users` (
   `balance` int NOT NULL DEFAULT '0',
   PRIMARY KEY (`idUser`)
 );
+
+CREATE TABLE IF NOT EXISTS `transactions` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `idUser` int NOT NULL,
+  `transaction_type` enum('PAYMENT','TOPUP') NOT NULL,
+  `amount` int NOT NULL,
+  PRIMARY KEY (`id`),
+  KEY `idUser` (`idUser`),
+  CONSTRAINT `transactions_ibfk_1` FOREIGN KEY (`idUser`) REFERENCES `users` (`idUser`) ON DELETE RESTRICT ON UPDATE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS `payments` (
+  `idPayment` int NOT NULL AUTO_INCREMENT,
+  `idTransaction` int NOT NULL,
+  `amount` int NOT NULL,
+  `topupStatus` enum('SUCCESS','FAILED') NOT NULL,
+  `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `invoice_number` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL,
+  `service_name` varchar(255) NOT NULL,
+  PRIMARY KEY (`idPayment`),
+  KEY `idTransaction` (`idTransaction`),
+  CONSTRAINT `payments_ibfk_1` FOREIGN KEY (`idTransaction`) REFERENCES `transactions` (`id`) ON DELETE RESTRICT ON UPDATE CASCADE
+);
+
+
+
+CREATE TABLE IF NOT EXISTS `topup` (
+  `idTopUp` int NOT NULL AUTO_INCREMENT,
+  `idTransaction` int NOT NULL,
+  `amount` int NOT NULL,
+  `topupStatus` enum('SUCCESS','FAILED') NOT NULL,
+  `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `invoice_number` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL,
+  PRIMARY KEY (`idTopUp`),
+  KEY `idTransaction` (`idTransaction`),
+  CONSTRAINT `topup_ibfk_1` FOREIGN KEY (`idTransaction`) REFERENCES `transactions` (`id`) ON DELETE RESTRICT ON UPDATE CASCADE
+);
+
+
+
