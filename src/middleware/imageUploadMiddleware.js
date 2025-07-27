@@ -3,48 +3,61 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import fs from 'fs';
 
-// Convert the URL to a directory path
+// Get directory path
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-
-// Ensure the upload directory exists
-const uploadDir = path.join(__dirname, '../../public/images');
-if (!fs.existsSync(uploadDir)) {
-  fs.mkdirSync(uploadDir, { recursive: true });
-}
 
 // Configure storage
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
+    const uploadDir = path.join(__dirname, '../../public/images');
+    
+    // Create directory if it doesn't exist
+    if (!fs.existsSync(uploadDir)) {
+      fs.mkdirSync(uploadDir, { recursive: true });
+    }
+    
     cb(null, uploadDir);
   },
   filename: function (req, file, cb) {
     const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
     const ext = path.extname(file.originalname).toLowerCase();
-    cb(null, file.fieldname + '-' + uniqueSuffix + ext);
+    cb(null, 'file-' + uniqueSuffix + ext); // Prefix with 'file-'
   }
 });
 
 // File filter for JPEG/PNG only
 const fileFilter = (req, file, cb) => {
-  const filetypes = /jpeg|jpg|png/;
-  const extname = filetypes.test(path.extname(file.originalname).toLowerCase());
-  const mimetype = filetypes.test(file.mimetype);
-
-  if (extname && mimetype) {
-    return cb(null, true);
+  const allowedTypes = ['image/jpeg', 'image/png'];
+  if (allowedTypes.includes(file.mimetype)) {
+    cb(null, true);
   } else {
-    cb(new Error('Only JPEG and PNG images are allowed!'), false);
+    const error = new Error('Format Image tidak sesuai');
+    error.status = 102;
+    cb(error, false);
   }
 };
 
-// Configure multer
-const upload = multer({
-  storage: storage,
-  fileFilter: fileFilter,
-  limits: {
-    fileSize: 5 * 1024 * 1024 // 5MB limit
-  }
-});
+export const upload = multer({
+  storage,
+  fileFilter
+}).single('file');
 
-export const imageUploadMiddleware = upload.single('image'); // 'image' is the field name
+export const fileUploadMiddleware = upload;
+
+export const handleUploadErrors = (err, req, res, next) => {
+  if (err instanceof multer.MulterError) {
+    return res.status(400).json({
+      status: 102,
+      message: 'Format Image tidak sesuai',
+      data: null
+    });
+  } else if (err.status === 102) {
+    return res.status(400).json({
+      status: 102,
+      message: err.message,
+      data: null
+    });
+  }
+  next(err);
+};
