@@ -1,0 +1,40 @@
+version: '3.8'
+
+services:
+  app:
+    build: .
+    ports:
+      - "3000:3000"
+    environment:
+      - HOST=mysql
+      - USER=root
+      - PASSWORD=your_root_password
+      - DATABASE=nutech_db
+      - SALTROUNDS=10
+      - ACCESS_TOKEN_SECRET=ACCESS_TOKEN_SECRET
+      - REFRESH_TOKEN_SECRET=REFRESH_TOKEN_SECRET
+    depends_on:
+      mysql:
+        condition: service_healthy
+    volumes:
+      - ./src:/app/src
+      - /app/node_modules
+
+  mysql:
+    image: mysql:8.0
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 5s
+      timeout: 10s
+      retries: 5
+    environment:
+      MYSQL_DATABASE: "nutech_db"
+      MYSQL_ROOT_PASSWORD: "your_root_password"
+    ports:
+      - "3306:3306"
+    volumes:
+      - ./mysql_data:/var/lib/mysql
+      - ./db/migrations:/docker-entrypoint-initdb.d
+
+volumes:
+  mysql_data:
