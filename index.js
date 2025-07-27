@@ -29,17 +29,9 @@ async function startServer() {
         console.error('Fatal: Could not connect to database');
         process.exit(1);
     }
-    
-    // Start your Express server
     app.listen(3000, () => {
         console.log('Server running on port 3000');
     });
 }
 
 startServer();
-
-// app.listen(PORT || 3000, () => {
-//   console.log(conn);
-  
-//   console.log(`Server berjalan di http://localhost:${PORT}`);
-// });
