@@ -9,13 +9,7 @@ Saya harap proyek ini menjadi gambaran terhadap kemampuan saya. Besar harapan sa
 
 Terimakasih 
 
-## Fitur Utama
-✅ Autentikasi JWT  
-✅ Manajemen Profil Pengguna  
-✅ Transaksi Top-Up & Pembayaran  
-✅ Upload Gambar Profil  
-✅ Docker Support  
-✅ Load Balancing dengan Nginx  
+## Fitur
 
 | Feature         | Description |
 |---------------|------------|
