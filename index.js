@@ -29,8 +29,9 @@ async function startServer() {
         console.error('Fatal: Could not connect to database');
         process.exit(1);
     }
-    app.listen(3000, () => {
-        console.log('Server running on port 3000');
+    const port = process.argv[2]?.split('=')[1] || process.env.PORT || 3000;
+    app.listen(port, () => {
+      console.log(`Server running on port ${port}`);
     });
 }
 
