@@ -2,6 +2,7 @@ import bcrypt from 'bcrypt';
 import { generateAccessToken, generateRefreshToken } from "../../utils/jwtUtils.js";
 import 'dotenv/config';
 import { conn } from '../../utils/db.js';
+import { baseUrl } from '../../utils/baseUrl.js';
 
 const saltRounds = Number(process.env.SALTROUNDS);
 
@@ -131,14 +132,48 @@ export const updateProfile = async (req, res) => {
     }
 }
 
+export const uploadImage = async (req, res) => {
+    const email = res.locals.email;
+    const idUser = res.locals.userId;
+    try {
+        if (!req.file) {
+            return res.status(400).json({
+                success: false,
+                message: 'No file uploaded or invalid file type'
+            });
+        }
+        const fileUrl = `${baseUrl}/images/${req.file.filename}`;
+        await conn.execute(
+            'UPDATE users SET profile_image = ? WHERE email = ? AND idUser = ?',
+            [fileUrl, email, idUser]
+        );
+        const findUser = await findUserByEmail(email);
+        res.status(200).json({
+            status: 0,
+            message: "Update Profile Image berhasil",
+            data: {
+                email,
+                first_name: findUser.first_name,
+                last_name: findUser.last_name,
+                profile_image: fileUrl
+            }
+        });
+    } catch (error) {
+        res.status(500).json({
+            status: "failed",
+            error: "Internal server error"
+        });
+    }
+};
+
 const findUserByEmail = async (email) => {
-  try {
-    const [user] = await conn.execute(
-      'SELECT * FROM users WHERE email = ? LIMIT 1',
-      [email]
-    );
-    return user[0] || null;
-  } catch (error) {
-    throw error;
-  }
+    try {
+        const [user] = await conn.execute(
+            'SELECT * FROM users WHERE email = ? LIMIT 1',
+            [email]
+        );
+        return user[0] || null;
+    } catch (error) {
+        throw error;
+    }
 };
