@@ -1,16 +1,9 @@
 import bcrypt from 'bcrypt';
-import mysql from 'mysql2/promise';
 import { generateAccessToken, generateRefreshToken } from "../../utils/jwtUtils.js";
 import 'dotenv/config';
+import { conn } from '../../utils/db.js';
 
 const saltRounds = Number(process.env.SALTROUNDS);
-
-const conn = await mysql.createConnection({
-    host: process.env.HOST,
-    user: process.env.USER,
-    password: process.env.PASSWORD,
-    database: process.env.DATABASE
-});
 
 export const login = async (req, res) => {
     const { email, password } = req.body;
