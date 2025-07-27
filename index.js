@@ -4,6 +4,7 @@ import informationRoutes from './src/routes/informationRoute.js';
 import transactionRoutes from './src/routes/transactionRoutes.js';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import { conn, testConnection } from './src/utils/db.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -22,6 +23,23 @@ app.get('/', (req, res) => {
   res.send('Hello from Node.js on port 3000!');
 })
 
-app.listen(PORT || 3000, () => {
-  console.log(`Server berjalan di http://localhost:${PORT}`);
-});
+async function startServer() {
+    const dbConnected = await testConnection();
+    if (!dbConnected) {
+        console.error('Fatal: Could not connect to database');
+        process.exit(1);
+    }
+    
+    // Start your Express server
+    app.listen(3000, () => {
+        console.log('Server running on port 3000');
+    });
+}
+
+startServer();
+
+// app.listen(PORT || 3000, () => {
+//   console.log(conn);
+  
+//   console.log(`Server berjalan di http://localhost:${PORT}`);
+// });
