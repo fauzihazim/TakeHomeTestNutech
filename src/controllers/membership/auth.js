@@ -83,13 +83,13 @@ export const getProfile = async (req, res) => {
             return;
         }
         res.status(200).json({
-            "status": 0,
-            "message": "Sukses",
-            "data": {
-                "email": findUser.email,
-                "first_name": findUser.first_name,
-                "last_name": findUser.last_name,
-                "profile_image": findUser.profile_image
+            status: 0,
+            message: "Sukses",
+            data: {
+                email: findUser.email,
+                first_name: findUser.first_name,
+                last_name: findUser.last_name,
+                profile_image: findUser.profile_image
             }
         });
     } catch (error) {
